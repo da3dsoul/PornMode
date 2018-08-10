@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace PornMode 
@@ -70,80 +71,112 @@ namespace PornMode
 
     public static class PrmaryScreenResolution 
     {
+        private static string[] Args = new[] { "-i", "-inverted", "/i" };
+
         public static void Main(string[] args)
         {
-            ChangeResolution();
+            bool inverted = false;
+            if (args.Length > 0)
+            {
+                inverted = Args.Any(a => args.Any(b => b.Trim().Equals(a, StringComparison.InvariantCultureIgnoreCase)));
+            }
+            ChangeResolution(inverted);
         }
 
-        public static string ChangeResolution() 
-        { 
-
+        public static string ChangeResolution(bool inverted) 
+        {
             DEVMODE dm = GetDevMode(); 
 
             if (0 != NativeMethods.EnumDisplaySettings(null, NativeMethods.ENUM_CURRENT_SETTINGS, ref dm)) 
             {
-
                 // swap width and height
                 int temp = dm.dmPelsHeight;
                 dm.dmPelsHeight = dm.dmPelsWidth;
                 dm.dmPelsWidth = temp;
 
-                // determine new orientation based on the current orientation
-                switch(dm.dmDisplayOrientation)
+                if (!inverted)
                 {
-                    case NativeMethods.DMDO_DEFAULT:
-                        //dm.dmDisplayOrientation = NativeMethods.DMDO_270;
-                        //2016-10-25/EBP wrap counter clockwise
-                        NativeMethods.SetAutoRotation(false);
-                        dm.dmDisplayOrientation = NativeMethods.DMDO_90;
-                        break;
-                    case NativeMethods.DMDO_270:
-                        NativeMethods.SetAutoRotation(true);
-                        dm.dmDisplayOrientation = NativeMethods.DMDO_180;
-                        break;
-                    case NativeMethods.DMDO_180:
-                        NativeMethods.SetAutoRotation(false);
-                        dm.dmDisplayOrientation = NativeMethods.DMDO_270;
-                        break;
-                    case NativeMethods.DMDO_90:
-                        NativeMethods.SetAutoRotation(true);
-                        dm.dmDisplayOrientation = NativeMethods.DMDO_DEFAULT;
-                        break;
-                    default:
-                        // unknown orientation value
-                        // add exception handling here
-                        break;
+                    // determine new orientation based on the current orientation
+                    switch (dm.dmDisplayOrientation)
+                    {
+                        case NativeMethods.DMDO_DEFAULT:
+                            //dm.dmDisplayOrientation = NativeMethods.DMDO_270;
+                            //2016-10-25/EBP wrap counter clockwise
+                            NativeMethods.SetAutoRotation(false);
+                            dm.dmDisplayOrientation = NativeMethods.DMDO_90;
+                            break;
+                        case NativeMethods.DMDO_90:
+                            NativeMethods.SetAutoRotation(true);
+                            dm.dmDisplayOrientation = NativeMethods.DMDO_DEFAULT;
+                            break;
+                        case NativeMethods.DMDO_270:
+                            NativeMethods.SetAutoRotation(true);
+                            dm.dmDisplayOrientation = NativeMethods.DMDO_180;
+                            break;
+                        case NativeMethods.DMDO_180:
+                            NativeMethods.SetAutoRotation(false);
+                            dm.dmDisplayOrientation = NativeMethods.DMDO_270;
+                            break;
+                        default:
+                            // unknown orientation value
+                            // add exception handling here
+                            break;
+                    }
                 }
+                else
+                {
+                    // determine new orientation based on the current orientation
+                    switch (dm.dmDisplayOrientation)
+                    {
+                        case NativeMethods.DMDO_DEFAULT:
+                            //dm.dmDisplayOrientation = NativeMethods.DMDO_270;
+                            //2016-10-25/EBP wrap counter clockwise
+                            NativeMethods.SetAutoRotation(false);
+                            dm.dmDisplayOrientation = NativeMethods.DMDO_270;
+                            break;
+                        case NativeMethods.DMDO_270:
+                            NativeMethods.SetAutoRotation(true);
+                            dm.dmDisplayOrientation = NativeMethods.DMDO_DEFAULT;
+                            break;
+                        case NativeMethods.DMDO_90:
+                            NativeMethods.SetAutoRotation(true);
+                            dm.dmDisplayOrientation = NativeMethods.DMDO_180;
+                            break;
+                        case NativeMethods.DMDO_180:
+                            NativeMethods.SetAutoRotation(false);
+                            dm.dmDisplayOrientation = NativeMethods.DMDO_90;
+                            break;
+                        default:
+                            // unknown orientation value
+                            // add exception handling here
+                            break;
+                    }
+                }
+                int iRet = NativeMethods.ChangeDisplaySettings(ref dm, NativeMethods.CDS_TEST);
 
-
-                int iRet = NativeMethods.ChangeDisplaySettings(ref dm, NativeMethods.CDS_TEST); 
-
-                if (iRet == NativeMethods.DISP_CHANGE_FAILED) 
-                { 
-                    return "Unable To Process Your Request. Sorry For This Inconvenience."; 
-                } 
-                else 
-                { 
-                    iRet = NativeMethods.ChangeDisplaySettings(ref dm, NativeMethods.CDS_UPDATEREGISTRY); 
-                    switch (iRet) 
-                    { 
-                        case NativeMethods.DISP_CHANGE_SUCCESSFUL: 
-                            { 
-                                return "Success"; 
-                            } 
-                        case NativeMethods.DISP_CHANGE_RESTART: 
-                            { 
-                                return "You Need To Reboot For The Change To Happen.\n If You Feel Any Problem After Rebooting Your Machine\nThen Try To Change Resolution In Safe Mode."; 
-                            } 
-                        default: 
-                            { 
-                                return "Failed To Change The Resolution"; 
-                            } 
-                    } 
-
-                } 
-
-
+                if (iRet == NativeMethods.DISP_CHANGE_FAILED)
+                {
+                    return "Unable To Process Your Request. Sorry For This Inconvenience.";
+                }
+                else
+                {
+                    iRet = NativeMethods.ChangeDisplaySettings(ref dm, NativeMethods.CDS_UPDATEREGISTRY);
+                    switch (iRet)
+                    {
+                        case NativeMethods.DISP_CHANGE_SUCCESSFUL:
+                        { 
+                            return "Success";
+                        } 
+                        case NativeMethods.DISP_CHANGE_RESTART:
+                        {
+                            return "You Need To Reboot For The Change To Happen.\n If You Feel Any Problem After Rebooting Your Machine\nThen Try To Change Resolution In Safe Mode.";
+                        }
+                        default:
+                        {
+                            return "Failed To Change The Resolution";
+                        }
+                    }
+                }
             } 
             else 
             { 
